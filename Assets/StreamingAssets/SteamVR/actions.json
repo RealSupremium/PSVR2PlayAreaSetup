@@ -106,6 +106,10 @@
       {
          "binding_url" : "application_generated_unity_psvr2passthrough_exe_binding_playstation_vr2_sense.json",
          "controller_type" : "playstation_vr2_sense"
+      },
+      {
+         "binding_url" : "application_generated_unity_psvr2passthrough_exe_binding_playstation_vr2_hmd.json",
+         "controller_type" : "playstation_vr2_hmd"
       }
    ],
    "localization" : [

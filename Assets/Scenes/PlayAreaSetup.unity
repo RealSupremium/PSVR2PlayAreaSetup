@@ -272,7 +272,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_RenderShadows: 1
+  m_RenderShadows: 0
   m_RequiresDepthTextureOption: 2
   m_RequiresOpaqueTextureOption: 2
   m_CameraType: 0
@@ -283,7 +283,7 @@ MonoBehaviour:
     m_Bits: 1
   m_VolumeTrigger: {fileID: 0}
   m_VolumeFrameworkUpdateModeOption: 2
-  m_RenderPostProcessing: 1
+  m_RenderPostProcessing: 0
   m_Antialiasing: 0
   m_AntialiasingQuality: 2
   m_StopNaN: 0
@@ -478,10 +478,13 @@ MonoBehaviour:
   maxVertices: 256
   maxDrawingVertices: 512
   createInRawSpace: 1
-  head: {fileID: 330585546}
-  gridResolution: 1000
+  gridResolution: 100
   lineMeshFilter: {fileID: 949412854}
   lineThickness: 0.0075
+  head: {fileID: 330585546}
+  headsetOnHead:
+    actionPath: /actions/PlayArea/in/HeadsetOnHead
+    needsReinit: 0
 --- !u!23 &905129618
 MeshRenderer:
   m_ObjectHideFlags: 0

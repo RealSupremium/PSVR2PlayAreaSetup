@@ -8,6 +8,7 @@ using Unity.Mathematics;
 using System;
 using System.Threading.Tasks;
 using Unity.Collections.NotBurstCompatible;
+using Valve.VR;
 
 [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
 public class ChaperoneMesh : MonoBehaviour
@@ -29,17 +30,19 @@ public class ChaperoneMesh : MonoBehaviour
     public bool createInRawSpace = false;
 
     [Header("Rectangle Fitting")]
-    public Transform head;
     public int gridResolution = 100;
 
     [Header("Boundary Line")]
     public MeshFilter lineMeshFilter;
     public float lineThickness = 0.0075f; // 7.5 cm
 
+    [Header("VR References")]
+
+    public Transform head;
+    public SteamVR_Action_Boolean headsetOnHead;
 
     private List<Vector3> _worldPoints = new List<Vector3>();
     private Mesh _mesh;
-    private MeshFilter _meshFilter;
     private PlayArea _playArea;
     
     private struct MeshUpdateData
@@ -53,9 +56,10 @@ public class ChaperoneMesh : MonoBehaviour
 
     void Start()
     {
-        _meshFilter = GetComponent<MeshFilter>();
         _mesh = new Mesh { name = "ChaperoneMesh" };
-        _meshFilter.mesh = _mesh;
+        GetComponent<MeshFilter>().mesh = _mesh;
+
+        lineMeshFilter.mesh = new Mesh { name = "ChaperoneLineMesh" };
 
         LoadPlayArea();
     }
@@ -65,6 +69,11 @@ public class ChaperoneMesh : MonoBehaviour
         lock (_mainThreadActions)
         {
             while (_mainThreadActions.Count > 0) _mainThreadActions.Dequeue().Invoke();
+        }
+
+        if (!HasPlayArea() && headsetOnHead.GetState(SteamVR_Input_Sources.Head))
+        {
+            CreateDefaultPlayArea();
         }
     }
 
@@ -77,6 +86,32 @@ public class ChaperoneMesh : MonoBehaviour
             Vector2 driverPoint = new Vector2(_playArea.points[i * 2], _playArea.points[i * 2 + 1]);
             _worldPoints.Add(TransformDriverToWorld(driverPoint));
         }
+        
+        RefreshMesh();
+    }
+
+    public bool HasPlayArea()
+    {
+        return _worldPoints.Count > 2;
+    }
+
+    public void CreateDefaultPlayArea()
+    {
+        _worldPoints.Clear();
+
+        // Make a default rectangle 2m x 2m where it is 1.5m below the head
+        float halfSize = 1.0f;
+        float headHeightOffset = -1.5f;
+
+        float yaw = head.rotation.eulerAngles.y;
+
+        _worldPoints.Add(Quaternion.Euler(0, yaw, 0) * new Vector3(-halfSize, headHeightOffset, -halfSize) + head.position);
+        _worldPoints.Add(Quaternion.Euler(0, yaw, 0) * new Vector3(halfSize, headHeightOffset, -halfSize) + head.position);
+        _worldPoints.Add(Quaternion.Euler(0, yaw, 0) * new Vector3(halfSize, headHeightOffset, halfSize) + head.position);
+        _worldPoints.Add(Quaternion.Euler(0, yaw, 0) * new Vector3(-halfSize, headHeightOffset, halfSize) + head.position);
+
+        AdjustFloorHeight(headHeightOffset + head.position.y);
+
         RefreshMesh();
     }
 
@@ -85,6 +120,13 @@ public class ChaperoneMesh : MonoBehaviour
 
     public void RefreshMesh()
     {
+        if (!HasPlayArea())
+        {
+            _mesh.Clear();
+            lineMeshFilter.mesh.Clear();
+            return;
+        }
+
         if (floorTask == null || floorTask.IsCompleted)
         {
             floorTask = Task.Run(() =>
@@ -111,7 +153,7 @@ public class ChaperoneMesh : MonoBehaviour
 
     private void GenerateFloorMesh()
     {
-        if (_playArea.pointCount == 0 || _worldPoints.Count < 3)
+        if (_worldPoints.Count < 3)
         {
             lock (_mainThreadActions)
             {
@@ -173,7 +215,7 @@ public class ChaperoneMesh : MonoBehaviour
 
     private void GenerateLineMesh()
     {
-        if (_playArea.pointCount == 0 || _worldPoints.Count < 3)
+        if (_worldPoints.Count < 3)
         {
             lock (_mainThreadActions)
             {
@@ -253,7 +295,7 @@ public class ChaperoneMesh : MonoBehaviour
         {
             _mainThreadActions.Enqueue(() =>
             {
-                Mesh lineMesh = lineMeshFilter.mesh ? lineMeshFilter.mesh : (lineMeshFilter.mesh = new Mesh { name = "ChaperoneLineMesh" });
+                Mesh lineMesh = lineMeshFilter.mesh;
                 lineMesh.Clear();
                 lineMesh.vertices = meshData.vertices;
                 lineMesh.triangles = meshData.triangles;
@@ -295,9 +337,6 @@ public class ChaperoneMesh : MonoBehaviour
     /// </summary>
     public bool IsPointInside(Vector3 worldPoint)
     {
-        // HACK: This will force drawing to occur
-        if (_worldPoints.Count < 3) return true;
-
         List<Vector3> polyPoints = _worldPoints;
 
         bool inside = false;
@@ -607,11 +646,6 @@ public class ChaperoneMesh : MonoBehaviour
     /// <returns>The Y coordinate of the floor in world space.</returns>
     public float GetFloorHeight()
     {
-        if (_worldPoints.Count == 0)
-        {
-            return -5.0f;
-        }
-
         return -_playArea.standingCenter[1];
     }
 

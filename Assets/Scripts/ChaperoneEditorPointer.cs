@@ -252,19 +252,16 @@ public class ChaperoneEditorPointer : MonoBehaviour
                         hapticAction.Execute(0f, 0.05f, 300f, 0.5f, inputSource);
                     }
                     hitVisual.position = snappedVertexWorldPos;
-                    hitVisual.localScale = new Vector3(0.05f, 0.05f, 0.05f); // Smaller visual for point selection
+                    hitVisual.localScale = new Vector3(0.05f, 0.05f, 0.05f); // Visual for point selection
 
                     if (deletePointAction.GetStateDown(inputSource))
                     {
                         chaperoneMesh.RemovePointAt(snappedVertexIndex);
                         chaperoneMesh.Simplify();
-                        snappedVertexIndex = -1; // Invalidate index after deletion
                     }
                     else if (modifyAction.GetState(inputSource))
                     {
                         chaperoneMesh.MovePoint(snappedVertexIndex, _smoothedHitPoint);
-                        chaperoneMesh.Simplify(true); // Fast simplify while dragging
-                        snappedVertexIndex = -1; // Invalidate index after deletion
                     }
                 }
             }
@@ -299,7 +296,7 @@ public class ChaperoneEditorPointer : MonoBehaviour
                     if (isInsideNew != isInside)
                     {
                         isInside = isInsideNew;
-                        hapticAction.Execute(0f, 0.025f, 60f, 1.0f, inputSource);
+                        hapticAction.Execute(0f, 0.025f, 60f, 0.5f, inputSource);
                     }
                 }
 
